@@ -4,6 +4,7 @@
 //  ULUC ALI TAPAN
 //  260556540
 //-------------------------------------------------------------------------------------------------------------------------//
+
 #include <fcntl.h>
 #include <pthread.h>
 #include <time.h>
@@ -50,7 +51,7 @@ typedef struct {
     unsigned int indirect_pointers; 
 } iNode;
 
-typedef struct { //Two seperate poitners for FDT was causing too many initialization issues, went with 1 pointer instead and dynamically switch between them
+typedef struct { //Two seperate pointers for FDT was causing too many initialization issues, went with 1 pointer instead and dynamically switch between them
     int inode_number;
     iNode* inode;
     int rwpointer;
@@ -91,7 +92,7 @@ int get_directory_inode(char *name)
 	return -1;
 }
 
-//get_index_bit: Get the index of the first free block in the bitmap. and 
+//get_index_bit: Get the index of the first free block in the bitmap.
 //--------------------------------------------------------------------------------------------------------//
 int get_index_bit() 
 {
@@ -128,7 +129,7 @@ void remove_index_bit(int index)
     FREE(bit_map[i], bit);
 }
 
-//inode_finder: Finds the first available inode with linear search.
+//inode_finder: Finds the first available I-Node with linear search.
 //--------------------------------------------------------------------------------------------------------//
 int inode_finder()
 {
@@ -145,7 +146,7 @@ int inode_finder()
 
 //mksfs: Formats the virtual disk implemented by the disk emulator and creates an instance of the
 //simple file system on top of it.
-//fresh = 1 --> The file system should be create from scratch.
+//fresh = 1 --> The file system shall be create from scratch.
 //fresh = 0 --> The file system is opened from the disk.
 //--------------------------------------------------------------------------------------------------------//
 void mksfs(int fresh)
@@ -223,7 +224,7 @@ void mksfs(int fresh)
 			set_index_bit(i);
 		}
 
-		//Store the root dir and inode to 1022 and 1023
+		//Store the root dir and I-Node to 1022 and 1023
 		set_index_bit(1022);
 		set_index_bit(1023);
 		iNodeTableStatus[0] = 1;
@@ -272,7 +273,7 @@ void mksfs(int fresh)
 		memcpy(&superblock, temp, sizeof(SuperBlock));
 		directory_location = 0;//Used for tracking the current directory location.
 
-		//Find the number of blocks occupied by the inode table and the root directory respectively
+		//Find the number of blocks occupied by the I-Node table and the root directory respectively
 		int inodeBlocks = (sizeof(iNodeTable)/BLOCK_SIZE);
 		if (sizeof(iNodeTable) % BLOCK_SIZE != 0)
 		{
@@ -335,7 +336,7 @@ int sfs_GetFileSize(const char* path)
 	}
 }
 
-//sfs_fopen: Opens a file and returns an integer that corresponds to the index of the entry for the
+//sfs_fopen: Opens a file and returns an integer which corresponds to the index of the entry for the
 //newly opened file in the open file descriptor table.
 //--------------------------------------------------------------------------------------------------------//
 int sfs_fopen(char *name){
@@ -383,9 +384,9 @@ int sfs_fopen(char *name){
 		//The file does not exists, we have to create it!
 		else
 		{
-			// Pick an inode for it 
+			// Pick an I-Node for it
 			int newInodeIndex = inode_finder();
-			if (newInodeIndex == -1){// No more free inodes !
+			if (newInodeIndex == -1){// No more free I-Nodes !
 				return -1;
 			}
 
@@ -416,6 +417,7 @@ int sfs_fopen(char *name){
 				pointers[i] = -1;
 			}
 			//------------------------------//
+            
 			fdt[fileDescriptorIndex].inode_number = newInodeIndex;
 			rootDirectory[directoryIndex].i_node = newInodeIndex;
 			strcpy(rootDirectory[directoryIndex].file_name, name);
@@ -438,6 +440,7 @@ int sfs_fopen(char *name){
 			fdt[fileDescriptorIndex].rwpointer = iNodeTable[newInodeIndex].size;
 
 			int rootDirectoryBlock = (sizeof(rootDirectory)/BLOCK_SIZE);
+            
 			//Don't forget the offset
 			if(sizeof(rootDirectory) % BLOCK_SIZE != 0)
 			{
@@ -456,6 +459,7 @@ int sfs_fopen(char *name){
 			//Write root directory to disk with write_blocks() function
 			write_blocks(iNodeTable[0].pointers[0], rootDirectoryBlock, temp);
 			free(temp);
+            
 			//Write I-Node table to disk with write_blocks() function
 			write_blocks(1, iNodeBlock, &iNodeTable);
 
@@ -489,7 +493,7 @@ int sfs_fclose(int fileID) {
 	}
 }
 
-//sfs_fread: Access in memory inode from file descriptor. Inode has info on the data blocks, find location 
+//sfs_fread: Access in memory I-Node from file descriptor. I-node has info on the data blocks, find location
 //of data block at current read pointer, fetch block from disk and read, need to handle cases of direct.
 //--------------------------------------------------------------------------------------------------------//
 int sfs_fread(int fileID, char *buf, int length) {
@@ -558,18 +562,19 @@ int sfs_fread(int fileID, char *buf, int length) {
 	}
 	//Set the read-write pointer to where we finished reading so if more
 	//reading needs to be done in the future, while this file is open, it 
-	//can continue from where its left off
+	//can continue from where it left off
 	fdt[fileID].rwpointer += amount;
 
 	//Extract whats read from the buffers and reset them for next use
 	memcpy(buf, (temp2 + offset), amount);
 	free(temp2);
 	free(temp1);
+    
 	//Return the amount read
 	return amount;
 }
 
-//sfs_fwrite: Access in memory inode from file descriptor. Inode has info on the data blocks, find location 
+//sfs_fwrite: Access in memory inode from file descriptor. I-node has info on the data blocks, find location
 //of data block at current write pointer, fetch block from disk and write, if needed, allocate new blocks
 //from disk: use bitmap to get next free blocks to write on.
 //--------------------------------------------------------------------------------------------------------//
@@ -699,8 +704,8 @@ int sfs_fwrite(int fileID, const char *buf, int length)
 	if (iNodeTable[iNodeId].link_count > 12){
 		write_blocks(iNodeTable[iNodeId].indirect_pointers, 1, &indirectPointerBlock);
 	}
-	//Write the inode table to disk
-	//Find the number of blocks occupied by the inode table
+	//Write the I-Node table to disk
+	//Find the number of blocks occupied by the I-Node table
 	int inodeBlocks = (sizeof(iNodeTable)/BLOCK_SIZE);
 	if (sizeof(iNodeTable) % BLOCK_SIZE != 0)
 	{
@@ -708,7 +713,7 @@ int sfs_fwrite(int fileID, const char *buf, int length)
 	}
 	write_blocks(1, inodeBlocks, &iNodeTable);
 
-	// Write the inode status to disk
+	// Write the I-Node status to disk
 	write_blocks(1022, 1, &iNodeTableStatus);
 
 	// Write bitmap to disk
@@ -826,3 +831,4 @@ int sfs_remove(char *file) {
 		return -1;
 	}
 }
+//--------------------------------------------------------------------------------------------------------//
